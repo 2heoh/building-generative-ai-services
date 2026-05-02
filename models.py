@@ -2,6 +2,10 @@
 
 import torch
 from transformers import Pipeline, pipeline, GenerationConfig
+import torch
+from diffusers import DiffusionPipeline, StableDiffusionInpaintPipelineLegacy
+from PIL import Image
+
 
 prompt = "How to set up a FastAPI project?"
 system_prompt = """
@@ -50,4 +54,21 @@ def generate_text(pipe: Pipeline, prompt: str, temperature: float = 0.7) -> str:
         clean_up_tokenization_spaces=False,
     ) 
     output = predictions[0]["generated_text"].split("</s>\n<|assistant|>\n")[-1] 
+    return output
+
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def load_image_model() -> StableDiffusionInpaintPipelineLegacy:
+    pipe = DiffusionPipeline.from_pretrained(
+        "segmind/tiny-sd", torch_dtype=torch.float32,
+        device=device
+    ) 
+    return pipe
+
+def generate_image(
+    pipe: StableDiffusionInpaintPipelineLegacy, prompt: str
+) -> Image.Image:
+    output = pipe(prompt, num_inference_steps=10).images[0]  
     return output
