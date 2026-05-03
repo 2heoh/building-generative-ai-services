@@ -26,3 +26,8 @@ def clean(text: str) -> str:
 
 def embed(text: str) -> list[float]:
     return embedder.encode(text).tolist()
+
+def chunk(tokens: list, chunk_size: int) -> list[list]:
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than 0")
+    return [tokens[i:i + chunk_size] for i in range(0, len(tokens), chunk_size)]
