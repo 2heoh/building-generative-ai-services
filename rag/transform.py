@@ -8,7 +8,14 @@ from sentence_transformers import SentenceTransformer
 
 DEFAULT_CHUNK_SIZE = 1024 * 1024 * 50  # 50 megabytes
 
-embedder = SentenceTransformer("jinaai/jina-embeddings-v2-base-en")
+_embedder = None
+
+def _get_embedder() -> SentenceTransformer:
+    """Lazy initialization of the SentenceTransformer model."""
+    global _embedder
+    if _embedder is None:
+        _embedder = SentenceTransformer("jinaai/jina-embeddings-v2-base-en")
+    return _embedder
 
 async def load(filepath: str, chunk_size: int) -> AsyncGenerator[str, Any]:
     async with aiofiles.open(filepath, "r", encoding="utf-8") as f: 
@@ -25,7 +32,7 @@ def clean(text: str) -> str:
     return cleaned_text 
 
 def embed(text: str) -> list[float]:
-    return embedder.encode(text).tolist()
+    return _get_embedder().encode(text).tolist()
 
 def chunk(tokens: list, chunk_size: int) -> list[list]:
     if chunk_size <= 0:
