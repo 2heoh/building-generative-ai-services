@@ -1,17 +1,17 @@
-from qdrant_client import QdrantClient
+from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 import pytest
 
 @pytest.fixture(scope="function") 
-def db_client():
-    client = QdrantClient(host="localhost", port=6333) 
-    if client.collection_exists(collection_name="test"):
-        client.delete_collection(collection_name="test")
-    client.create_collection( 
+async def async_db_client():
+    client = AsyncQdrantClient(host="localhost", port=6333) 
+    if await client.collection_exists(collection_name="test"):
+        await client.delete_collection(collection_name="test")
+    await client.create_collection( 
         collection_name="test",
         vectors_config=VectorParams(size=4, distance=Distance.DOT),
     )
-    client.upsert( 
+    await client.upsert( 
         collection_name="test",
         points=[
             PointStruct(
@@ -20,4 +20,4 @@ def db_client():
         ],
     )
     yield client 
-    client.close() 
+    await client.close() 
