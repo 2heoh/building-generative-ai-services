@@ -2,9 +2,9 @@
 
 import torch
 from transformers import Pipeline, pipeline, GenerationConfig
-import torch
 from diffusers import DiffusionPipeline, StableDiffusionInpaintPipelineLegacy
 from PIL import Image
+import markdown2
 
 
 prompt = "How to set up a FastAPI project?"
@@ -51,11 +51,21 @@ def generate_text(pipe: Pipeline, prompt: str, temperature: float = 0.7) -> str:
     predictions = pipe(
         prompt,
         generation_config=generation_config,
-        clean_up_tokenization_spaces=False,
+        clean_up_tokenization_spaces=True,  # Changed to True to properly clean up tokens
     ) 
-    output = predictions[0]["generated_text"].split("</s>\n<|assistant|>\n")[-1] 
+    generated_text = predictions[0]["generated_text"]
+    
+    # Extract assistant response
+    assistant_start = generated_text.rfind("<|assistant|>")
+    if assistant_start != -1:
+        output = generated_text[assistant_start + len("<|assistant|>"):].strip()
+    else:
+        output = generated_text.strip()
+    
+    # Convert markdown to HTML for web display
+    output = markdown2.markdown(output)
+    
     return output
-
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
