@@ -10,7 +10,7 @@ if "messages" not in st.session_state:
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(message["content"]) 
+        st.markdown(message["content"], unsafe_allow_html=True) 
 
 st.write("Upload a file to FastAPI")
 file = st.file_uploader("Choose a file", type=["pdf"])
@@ -35,4 +35,4 @@ if prompt := st.chat_input("Write your prompt in this input field"):
     response.raise_for_status() 
 
     with st.chat_message("assistant"):
-        st.markdown(response.text) 
+        st.markdown(response.text, unsafe_allow_html=True) 

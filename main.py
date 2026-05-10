@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 load_dotenv()
 
+import markdown2
 from contextlib import asynccontextmanager
 from typing import Annotated, AsyncIterator
 from openai import OpenAI
@@ -51,7 +52,8 @@ def root_controller():
 def serve_language_model_controller(prompt: str) -> str: 
     # pipe = load_text_model() 
     output = generate_text(models["text"], prompt) 
-    return output 
+    html_output = markdown2.markdown(output, extras=["fenced-code-blocks", "code-colors"])
+    return html_output 
 
 @app.post("/generate/text") 
 async def serve_text_to_text_controller(
@@ -69,8 +71,9 @@ async def serve_text_to_text_controller(
     # output=generate_text(models['text'], body.prompt, body.temperature)
     prompt = body.prompt + " " + urls_content + rag_content
     output = generate_text(models["text"], prompt, body.temperature)
+    html_output = markdown2.markdown(output, extras=["fenced-code-blocks", "code-colors"])
     tokens = count_tokens(body.prompt) + count_tokens(output)
-    return TextModelResponse(content=output, ip=request.client.host, tokens=tokens)
+    return TextModelResponse(content=html_output, ip=request.client.host, tokens=tokens)
     # output = generate_text(models["text"], body.prompt, body.temperature)    
     
     # return TextModelResponse(response=output,tokens=tokens)
@@ -86,7 +89,8 @@ def chat_controller(prompt: str = "Inspire me"):
         ],
     )
     statement = response.choices[0].message.content
-    return {"statement": statement} 
+    html_statement = markdown2.markdown(statement, extras=["fenced-code-blocks", "code-colors"])
+    return {"statement": html_statement} 
 
 @app.post("/upload")
 async def file_upload_controller(
