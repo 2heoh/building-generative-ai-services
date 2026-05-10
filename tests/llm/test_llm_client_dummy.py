@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
 class DummyLLMClient:
     def invoke(self, query, token): 
         return "some response"

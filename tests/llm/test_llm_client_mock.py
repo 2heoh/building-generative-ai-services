@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
 def process_query(query, llm_client):
     response = llm_client.invoke(query)
     return response

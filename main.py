@@ -25,6 +25,7 @@ from utils import count_tokens
 from dependencies import get_rag_content, get_urls_content
 from upload import save_file
 from rag import pdf_text_extractor, vector_service
+from llm_client import LLMClient
 
 models = {} 
 
@@ -42,6 +43,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(lifespan=lifespan) 
 # app = FastAPI() 
 openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY')) 
+llm_client = LLMClient(openai_client)
 
 
 @app.get("/")

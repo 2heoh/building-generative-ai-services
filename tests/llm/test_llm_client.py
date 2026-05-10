@@ -3,6 +3,8 @@ from openai import OpenAI
 
 from main import openai_client 
 
+pytestmark = pytest.mark.unit
+
 class LLMClient:
     def invoke(self, query):
 

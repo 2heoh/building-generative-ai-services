@@ -2,6 +2,8 @@ import json
 import pytest
 from rag.transform import chunk
 
+pytestmark = pytest.mark.unit
+
 @pytest.fixture(scope="module")
 def tokens():
     return [1, 2, 3, 4, 5]

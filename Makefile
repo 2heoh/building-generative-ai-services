@@ -1,4 +1,4 @@
-.PHONY: help setup venv install run dev client test test-v lint clean
+.PHONY: help setup venv install run dev client test test-unit test-integration test-v lint clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -22,6 +22,12 @@ client: ## Run Streamlit client
 
 test: ## Run all tests
 	.venv/bin/python -m pytest -v
+
+test-unit: ## Run unit tests only
+	.venv/bin/python -m pytest -v -m unit
+
+test-integration: ## Run integration tests only
+	.venv/bin/python -m pytest -v -m integration
 
 test-v: ## Run tests with extra verbosity
 	.venv/bin/python -m pytest -vv

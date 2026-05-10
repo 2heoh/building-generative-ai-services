@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
 class StubLLMClient:
     def invoke(self, query):
         if query == "specific query": 

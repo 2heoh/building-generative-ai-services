@@ -1,3 +1,7 @@
+import pytest
+
+pytestmark = pytest.mark.unit
+
 class SpyLLMClient:
     def __init__(self):
         self.call_count = 0
