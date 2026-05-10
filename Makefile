@@ -1,4 +1,4 @@
-.PHONY: help setup venv install run dev test test-v lint clean
+.PHONY: help setup venv install run dev client test test-v lint clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -16,6 +16,9 @@ run: ## Run production server
 
 dev: ## Run dev server with auto-reload
 	.venv/bin/uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+client: ## Run Streamlit client
+	.venv/bin/streamlit run client.py
 
 test: ## Run all tests
 	.venv/bin/python -m pytest -v
