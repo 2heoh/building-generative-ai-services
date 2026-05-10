@@ -8,6 +8,7 @@ load_dotenv()
 from llm_client import LLMClient
 from openai import OpenAI
 
+pytestmark = pytest.mark.integration
 
 llm_client = LLMClient(OpenAI(api_key=os.getenv('OPENAI_API_KEY')) )
 

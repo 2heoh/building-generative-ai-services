@@ -3,6 +3,24 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 import pytest
 
+
+def pytest_collection_modifyitems(items):
+    """Reorder tests so unit tests run before integration tests."""
+    unit_tests = []
+    integration_tests = []
+    other_tests = []
+
+    for item in items:
+        if item.get_closest_marker("integration"):
+            integration_tests.append(item)
+        elif item.get_closest_marker("unit"):
+            unit_tests.append(item)
+        else:
+            other_tests.append(item)
+
+    items[:] = unit_tests + other_tests + integration_tests
+
+
 @pytest.fixture(scope="function") 
 async def async_db_client():
     client = AsyncQdrantClient(host="localhost", port=6333) 
