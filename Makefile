@@ -1,5 +1,12 @@
 .PHONY: help setup venv install run dev client test test-unit test-integration test-v lint clean
 
+# Extra arguments passed after make target (e.g. make test tests/integration/test_minimum_functionality.py)
+TEST_PATH := $(filter-out help setup venv install run dev client test test-unit test-integration test-v lint clean,$(MAKECMDGOALS))
+
+# Prevent make from treating extra arguments as file targets
+$(TEST_PATH):
+	@:
+
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
@@ -20,8 +27,8 @@ dev: ## Run dev server with auto-reload
 client: ## Run Streamlit client
 	.venv/bin/streamlit run client.py
 
-test: ## Run all tests
-	.venv/bin/python -m pytest -v
+test: ## Run tests (optional: specify path, e.g. make test tests/integration/test_llm.py)
+	.venv/bin/python -m pytest -v $(TEST_PATH)
 
 test-unit: ## Run unit tests only
 	.venv/bin/python -m pytest -v -m unit
