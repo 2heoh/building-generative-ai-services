@@ -1,9 +1,14 @@
 import pytest
 
-from llm_client import LLMClient
-from main import openai_client
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-openai_client = LLMClient(openai_client)
+from llm_client import LLMClient
+from openai import OpenAI
+
+
+llm_client = LLMClient(OpenAI(api_key=os.getenv('OPENAI_API_KEY')) )
 
 @pytest.mark.integration
 @pytest.mark.parametrize("user_query, expected_tool", [
@@ -32,6 +37,6 @@ openai_client = LLMClient(openai_client)
     ("Summarize the onboarding checklist into bullet points", "SUMMARIZER"),    
 ])
 def test_llm_tool_selection_response(user_query, expected_tool):
-    response = openai_client.invoke(user_query, response_type="json")
+    response = llm_client.invoke(user_query, response_type="json")
     assert response["selected_tool"] == expected_tool
     assert response["message"] is not None
