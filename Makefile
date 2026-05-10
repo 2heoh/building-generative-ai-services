@@ -1,0 +1,32 @@
+.PHONY: help setup venv install run dev test test-v lint clean
+
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+venv: ## Create virtual environment
+	python3 -m venv .venv
+
+setup: venv install ## Full setup: create venv and install dependencies
+
+install: ## Install dependencies
+	.venv/bin/pip install -r requirements.txt
+
+run: ## Run production server
+	.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+
+dev: ## Run dev server with auto-reload
+	.venv/bin/uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+test: ## Run all tests
+	.venv/bin/python -m pytest -v
+
+test-v: ## Run tests with extra verbosity
+	.venv/bin/python -m pytest -vv
+
+lint: ## Run linter (ruff)
+	.venv/bin/ruff check .
+
+clean: ## Remove cache and bytecode files
+	find . -type d -name __pycache__ -exec rm -rf {} +
+	find . -type d -name .pytest_cache -exec rm -rf {} +
+	find . -type f -name '*.pyc' -delete
