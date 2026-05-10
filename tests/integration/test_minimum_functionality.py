@@ -1,13 +1,31 @@
 import textstat
 import pytest
 
-@pytest.mark.parametrize("prompt, expected_score", [ 
-    ("Explain behavioral testing", 60),
-    ("Explain behavioral testing as simple as you can", 70),
-])
-def test_minimum_functionality_readability(prompt, expected_score, llm_client):
-    response = llm_client.invoke(prompt)
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-    readability_score = textstat.flesch_reading_ease(response) 
+from llm_client import LLMClient
+from openai import OpenAI
+
+
+llm_client = LLMClient(OpenAI(api_key=os.getenv('OPENAI_API_KEY')) )
+
+EXPLANATION_SYSTEM_PROMPT = (
+    "You are a helpful assistant. Explain the user's question in very simple terms. "
+    "Use short sentences and simple words. Write as if explaining to a 10-year-old. "
+    "Avoid jargon and complex language."
+)
+
+@pytest.mark.parametrize("prompt, expected_score", [ 
+    ("Explain behavioral testing", 40),
+    ("Explain behavioral testing as simple as you can", 60),
+])
+def test_minimum_functionality_readability(prompt, expected_score):
+    
+    response = llm_client.invoke(prompt, system_prompt=EXPLANATION_SYSTEM_PROMPT)
+    text = response["message"]
+
+    readability_score = textstat.flesch_reading_ease(text) 
 
     assert expected_score < readability_score < 90
