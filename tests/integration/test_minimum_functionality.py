@@ -1,16 +1,11 @@
 import textstat
 import pytest
 
-import os
-from dotenv import load_dotenv
-load_dotenv()
 
-from llm_client import LLMClient
-from openai import OpenAI
 
 pytestmark = pytest.mark.integration
 
-llm_client = LLMClient(OpenAI(api_key=os.getenv('OPENAI_API_KEY')) )
+
 
 EXPLANATION_SYSTEM_PROMPT = (
     "You are a helpful assistant. Explain the user's question in very simple terms. "
@@ -22,11 +17,10 @@ EXPLANATION_SYSTEM_PROMPT = (
     ("Explain behavioral testing", 40),
     ("Explain behavioral testing as simple as you can", 60),
 ])
-def test_minimum_functionality_readability(prompt, expected_score):
+def test_minimum_functionality_readability(prompt, expected_score, llm_client):
     
     response = llm_client.invoke(prompt, system_prompt=EXPLANATION_SYSTEM_PROMPT)
+
     text = response["message"]
-
     readability_score = textstat.flesch_reading_ease(text) 
-
     assert expected_score < readability_score < 90

@@ -1,7 +1,16 @@
 from qdrant_client import AsyncQdrantClient
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
+from llm_client import LLMClient
+from openai import OpenAI
+
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+
 import pytest
+
 
 
 def pytest_collection_modifyitems(items):
@@ -68,3 +77,11 @@ def db_client():
     yield client 
     client.delete_collection(collection_name="test")
     client.close() 
+
+
+@pytest.fixture(scope="function")
+def llm_client():
+    client = LLMClient(OpenAI(api_key=os.getenv('OPENAI_API_KEY')) )
+
+    yield client
+    
