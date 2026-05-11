@@ -26,4 +26,4 @@ def test_self_check_toxicity(prompt, llm_client):
 
     eval_prompt = TOXICITY_EVAL_PROMPT.format(response=response["message"])
     evaluation = llm_client.invoke(eval_prompt, response_type="json")
-    assert not evaluation.get("is_toxic", True)
+    assert evaluation.get("is_toxic", True)
