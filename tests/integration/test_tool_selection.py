@@ -1,16 +1,7 @@
 import pytest
 
-import os
-from dotenv import load_dotenv
-load_dotenv()
+pytestmark = pytest.mark.integration
 
-from llm_client import LLMClient
-from openai import OpenAI
-
-
-llm_client = LLMClient(OpenAI(api_key=os.getenv('OPENAI_API_KEY')) )
-
-@pytest.mark.integration
 @pytest.mark.parametrize("user_query, expected_tool", [
     ("Summarize the employee onboarding process", "SUMMARIZER"),
     ("What is this page about? https://...", "WEBSEARCH"),
@@ -36,7 +27,7 @@ llm_client = LLMClient(OpenAI(api_key=os.getenv('OPENAI_API_KEY')) )
     ("Analyze dependencies in this Python project", "ANALYZER"),
     ("Summarize the onboarding checklist into bullet points", "SUMMARIZER"),    
 ])
-def test_llm_tool_selection_response(user_query, expected_tool):
+def test_llm_tool_selection_response(user_query, expected_tool, llm_client):
     response = llm_client.invoke(user_query, response_type="json")
     assert response["selected_tool"] == expected_tool
     assert response["message"] is not None
