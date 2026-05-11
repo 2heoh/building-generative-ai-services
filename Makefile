@@ -28,7 +28,7 @@ client: ## Run Streamlit client
 	.venv/bin/streamlit run client.py
 
 test: ## Run tests (optional: specify path, e.g. make test tests/integration/test_llm.py)
-	.venv/bin/python -m pytest -v $(TEST_PATH)
+	.venv/bin/python -m pytest -s -v $(TEST_PATH)
 
 test-unit: ## Run unit tests only
 	.venv/bin/python -m pytest -v -m unit

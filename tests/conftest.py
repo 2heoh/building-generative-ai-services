@@ -8,6 +8,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+from aiohttp import ClientSession
+from main import app
 
 import pytest
 
@@ -85,3 +87,9 @@ def llm_client():
 
     yield client
     
+
+
+@pytest.fixture
+async def test_client():
+    async with ClientSession() as client:
+        yield client
