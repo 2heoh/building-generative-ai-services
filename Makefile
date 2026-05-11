@@ -1,4 +1,4 @@
-.PHONY: help setup venv install run dev client test test-unit test-integration test-v lint clean
+.PHONY: help setup venv install run dev client test test-unit test-integration test-v lint clean qdrant-start qdrant-stop qdrant-status qdrant-clean
 
 # Extra arguments passed after make target (e.g. make test tests/integration/test_minimum_functionality.py)
 TEST_PATH := $(filter-out help setup venv install run dev client test test-unit test-integration test-v lint clean,$(MAKECMDGOALS))
@@ -46,3 +46,30 @@ clean: ## Remove cache and bytecode files
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type d -name .pytest_cache -exec rm -rf {} +
 	find . -type f -name '*.pyc' -delete
+	find . -type d -name '*.pyc' -delete
+
+# Qdrant Docker commands
+QDRANT_CONTAINER_NAME := qdrant
+QDRANT_PORT := 6333
+QDRANT_IMAGE := qdrant/qdrant:latest
+
+qdrant-start: ## Start Qdrant vector database in Docker
+	docker run -d \
+		--name $(QDRANT_CONTAINER_NAME) \
+		-p $(QDRANT_PORT):6333 \
+		-p 6334:6334 \
+		-v qdrant_storage:/qdrant/storage \
+		-e QDRANT_ALLOW_RECOVERY_MODE=true \
+		$(QDRANT_IMAGE)
+
+qdrant-stop: ## Stop Qdrant container
+	docker stop $(QDRANT_CONTAINER_NAME) || true
+	docker rm $(QDRANT_CONTAINER_NAME) || true
+
+qdrant-status: ## Check Qdrant container status
+	docker ps -a --filter "name=$(QDRANT_CONTAINER_NAME)"
+
+qdrant-clean: ## Remove Qdrant container and volume
+	docker stop $(QDRANT_CONTAINER_NAME) || true
+	docker rm $(QDRANT_CONTAINER_NAME) || true
+	docker volume rm qdrant_storage || true

@@ -28,6 +28,7 @@ A FastAPI-based web server providing generative AI services including text gener
 ### Prerequisites
 
 - Python 3.10+
+- Docker (for Qdrant vector database)
 
 ### Installation
 
@@ -70,6 +71,24 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 The server will be available at `http://localhost:8000`.
 
+### Running Qdrant (Vector Database)
+
+```bash
+# Start Qdrant in Docker
+make qdrant-start
+
+# Check status
+make qdrant-status
+
+# Stop Qdrant
+make qdrant-stop
+
+# Remove Qdrant container and data
+make qdrant-clean
+```
+
+Qdrant will be available at `http://localhost:6333`.
+
 ### API Documentation
 
 Once the server is running, interactive API documentation is available at:
@@ -88,6 +107,8 @@ Once the server is running, interactive API documentation is available at:
 
 ## Running Tests
 
+> **Note:** If you encounter import conflicts with duplicate test filenames, run `make clean` first to clear the pytest cache.
+
 ```bash
 # Activate virtual environment
 source .venv/bin/activate
@@ -100,6 +121,9 @@ PYTHONPATH=. pytest -v
 
 # Run specific test file
 PYTHONPATH=. pytest tests/rag/test_transform.py -v
+
+# Run integration tests only
+make test-integration
 ```
 
 ## Project Structure
@@ -126,6 +150,21 @@ simple-web-server/
 ```
 
 ## Development
+
+### Makefile Commands
+
+```bash
+make help           # Show all available commands
+make setup          # Full setup (venv + install)
+make dev            # Run dev server with auto-reload
+make test           # Run all tests
+make test-integration  # Run integration tests
+make lint           # Run linter (ruff)
+make clean          # Remove cache and bytecode files
+make qdrant-start   # Start Qdrant vector database
+make qdrant-stop    # Stop Qdrant
+make qdrant-clean   # Remove Qdrant and its data
+```
 
 ### Coding Conventions
 
