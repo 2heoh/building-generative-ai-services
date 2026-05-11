@@ -16,4 +16,5 @@ Pillow==11.3.0
 tiktoken==0.9.0
 pypdf==6.10.2
 qdrant-client==1.16.1
+reportlab==4.4.2
 markdown2==2.5.4

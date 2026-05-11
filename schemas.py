@@ -33,7 +33,8 @@ class TextModelRequest:
 
 # @dataclass
 class TextModelResponse(BaseModel): 
-    # response: str
+    content: str
+    ip: str | None = None
     tokens: Annotated[int, Field(ge=0)]
 
 ImageSize = Annotated[
