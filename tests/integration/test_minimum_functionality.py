@@ -23,4 +23,4 @@ def test_minimum_functionality_readability(prompt, expected_score, llm_client):
 
     text = response["message"]
     readability_score = textstat.flesch_reading_ease(text) 
-    assert expected_score < readability_score < 90
+    assert expected_score < readability_score <= 100

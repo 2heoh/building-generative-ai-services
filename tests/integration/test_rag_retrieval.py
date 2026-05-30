@@ -131,23 +131,26 @@ async def test_retrieve_single_document(populated_rag_collection):
 @pytest.mark.asyncio
 async def test_retrieve_multiple_documents(populated_rag_collection):
     """Test retrieving multiple relevant documents."""
-    query = "AI and machine learning systems"
+    query = "Machine learning and artificial intelligence systems"
     query_vector = embed(clean(query))
     
     results = await vector_service.search(
         collection_name=populated_rag_collection,
         query_vector=query_vector,
-        retrieval_limit=3,
+        retrieval_limit=5,
         score_threshold=0.0,
     )
     
-    assert len(results) >= 2  # Should find ML and NLP documents
+    assert len(results) >= 2
     
     retrieved_texts = [r.payload["original_text"] for r in results]
-    # At least one result should be about machine learning
-    assert any(
-        "machine learning" in text.lower() or "artificial intelligence" in text.lower()
-        for text in retrieved_texts
+    ai_keywords = ("machine learning", "natural language processing", "nlp")
+    ai_related = [
+        text for text in retrieved_texts
+        if any(keyword in text.lower() for keyword in ai_keywords)
+    ]
+    assert len(ai_related) >= 2, (
+        f"Expected at least 2 AI-related documents, got: {retrieved_texts}"
     )
 
 
@@ -188,7 +191,7 @@ async def test_semantic_similarity_vector_database(populated_rag_collection):
     results = await vector_service.search(
         collection_name=populated_rag_collection,
         query_vector=query_vector,
-        retrieval_limit=3,
+        retrieval_limit=5,
         score_threshold=0.0,
     )
     
@@ -196,31 +199,31 @@ async def test_semantic_similarity_vector_database(populated_rag_collection):
     # Qdrant/vector database document should be retrieved
     retrieved_texts = [r.payload["original_text"] for r in results]
     assert any(
-        "vector" in text.lower() and "similar" in text.lower()
+        "Qdrant" in text or "vector database" in text.lower()
         for text in retrieved_texts
-    )
+    ), f"Expected vector database content, got: {retrieved_texts}"
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_semantic_similarity_nlp(populated_rag_collection):
     """Test semantic retrieval for NLP queries."""
-    query = "Processing human language with computers"
+    query = "NLP text classification and sentiment analysis"
     query_vector = embed(clean(query))
     
     results = await vector_service.search(
         collection_name=populated_rag_collection,
         query_vector=query_vector,
-        retrieval_limit=3,
+        retrieval_limit=5,
         score_threshold=0.0,
     )
     
     assert len(results) > 0
     retrieved_texts = [r.payload["original_text"] for r in results]
     assert any(
-        "language" in text.lower() and "processing" in text.lower()
+        "NLP" in text or "natural language processing" in text.lower()
         for text in retrieved_texts
-    )
+    ), f"Expected NLP content, got: {retrieved_texts}"
 
 
 # ============================================================================

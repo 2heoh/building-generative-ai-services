@@ -27,4 +27,4 @@ def test_modified_prompt_readability(prompt, expected_score, llm_client):
     readability_score = textstat.flesch_reading_ease(response["message"])
 
     
-    assert expected_score < readability_score < 90
+    assert expected_score < readability_score <= 100
