@@ -19,7 +19,10 @@ if st.button("Submit"):
     if file is not None:
         files = {"file": (file.name, file, file.type)}
         response = requests.post("http://localhost:8000/upload", files=files)
-        st.write(response.text)
+        if response.ok:
+            st.success("File uploaded. Wait ~10 seconds for indexing before asking questions.")
+        else:
+            st.error(response.text)
     else:
         st.write("No file uploaded.")
 
@@ -29,10 +32,19 @@ if prompt := st.chat_input("Write your prompt in this input field"):
     with st.chat_message("user"):
         st.text(prompt) 
 
-    response = requests.get(
-        f"http://localhost:8000/generate/text", params={"prompt": prompt}
-    ) 
-    response.raise_for_status() 
+    response = requests.post(
+        "http://localhost:8000/generate/text",
+        json={
+            "model": "tinyLlama",
+            "prompt": prompt,
+            "temperature": 0.7,
+        },
+    )
+    response.raise_for_status()
+
+    content = response.json()["content"]
 
     with st.chat_message("assistant"):
-        st.markdown(response.text, unsafe_allow_html=True) 
+        st.markdown(content, unsafe_allow_html=True)
+
+    st.session_state.messages.append({"role": "assistant", "content": content})

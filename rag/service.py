@@ -18,7 +18,7 @@ class VectorService(VectorRepository):
         collection_name: str = "knowledgebase",
         collection_size: int = 768,
     ) -> None:
-        await self.create_collection(collection_name, collection_size)
+        await self.ensure_collection(collection_name, collection_size)
         logger.debug(f"Inserting {filepath} content into database")
         async for chunk in load(filepath, chunk_size): 
             logger.debug(f"Inserting '{chunk[0:20]}...' into database")

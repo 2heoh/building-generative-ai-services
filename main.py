@@ -22,10 +22,20 @@ from fastapi import (
 from models import generate_text, load_text_model, load_image_model
 from schemas import TextModelRequest, TextModelResponse
 from utils import count_tokens
-from dependencies import get_rag_content, get_urls_content
+from dependencies import build_generation_prompt, get_rag_content, get_urls_content
 from upload import save_file
 from rag import pdf_text_extractor, vector_service
 from llm_client import LLMClient
+
+
+async def index_uploaded_pdf(filepath: str) -> None:
+    pdf_text_extractor(filepath)
+    await vector_service.store_file_content_in_db(
+        filepath.replace("pdf", "txt"),
+        512,
+        "knowledgebase",
+        768,
+    )
 
 models = {} 
 
@@ -70,9 +80,9 @@ async def serve_text_to_text_controller(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
     
-    # output=generate_text(models['text'], body.prompt, body.temperature)
-    prompt = body.prompt + " " + urls_content + rag_content
-    output = generate_text(models["text"], prompt, body.temperature)
+    prompt = build_generation_prompt(body.prompt, urls_content, rag_content)
+    temperature = 0.1 if rag_content.strip() else body.temperature
+    output = generate_text(models["text"], prompt, temperature)
     html_output = markdown2.markdown(output, extras=["fenced-code-blocks", "code-colors"])
     tokens = count_tokens(body.prompt) + count_tokens(output)
     return TextModelResponse(content=html_output, ip=request.client.host, tokens=tokens)
@@ -106,14 +116,7 @@ async def file_upload_controller(
         )
     try:
         filepath = await save_file(file)
-        bg_text_processor.add_task(pdf_text_extractor, filepath)
-        bg_text_processor.add_task(
-            vector_service.store_file_content_in_db,
-            filepath.replace("pdf", "txt"), 
-            512, 
-            "knowledgebase", 
-            768
-        )
+        bg_text_processor.add_task(index_uploaded_pdf, filepath)
     except Exception as e:
         raise HTTPException(
             detail=f"An error occurred while saving file - Error: {e}",

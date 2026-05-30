@@ -10,7 +10,24 @@ class VectorRepository:
     def __init__(self, host: str = "localhost", port: int = 6333) -> None:
         self.db_client = AsyncQdrantClient(host=host, port=port)
 
-    async def create_collection(self, collection_name: str, size: int) -> bool: 
+    async def ensure_collection(self, collection_name: str, size: int) -> bool:
+        response = await self.db_client.get_collections()
+        collection_exists = any(
+            collection.name == collection_name
+            for collection in response.collections
+        )
+        if collection_exists:
+            return True
+
+        logger.debug(f"Creating collection {collection_name}")
+        return await self.db_client.create_collection(
+            collection_name=collection_name,
+            vectors_config=models.VectorParams(
+                size=size, distance=models.Distance.COSINE
+            ),
+        )
+
+    async def create_collection(self, collection_name: str, size: int) -> bool:
         vectors_config = models.VectorParams(
             size=size, distance=models.Distance.COSINE 
         )

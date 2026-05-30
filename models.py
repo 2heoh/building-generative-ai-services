@@ -8,11 +8,7 @@ import markdown2
 
 
 prompt = "How to set up a FastAPI project?"
-system_prompt = """
-Your name is FastAPI bot and you are a helpful
-chatbot responsible for teaching FastAPI to your users.
-Always respond in markdown.
-"""
+system_prompt = """You are a question-answering assistant. The user gives you a document and a question. Answer the question using only facts from the document. Give a direct, short answer."""
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
 
