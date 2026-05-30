@@ -83,7 +83,7 @@ async def test_rag_user_workflow(db_client: AsyncQdrantClient, text_model):
 
         # Wait for background tasks (PDF extraction + vector storage) to complete
         # before querying the RAG system
-        await asyncio.sleep(10)
+        await asyncio.sleep(5)
 
         generate_response = await client.post(
             "/generate/text",

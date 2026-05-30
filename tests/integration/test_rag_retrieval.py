@@ -408,26 +408,69 @@ async def test_semantic_query_different_words_same_meaning(populated_rag_collect
 # Tests - DORA ROI document (human in the loop)
 # ============================================================================
 
-DORA_ROI_TXT = (
-    "uploads/dora-roi-of-ai-assisted-software-development-2026.txt"
-)
 HUMAN_IN_THE_LOOP_QUERY = "what about human in the loop?"
+
+# Minimal DORA-like excerpts: human-in-the-loop target, ROI calculator noise,
+# and generic filler chunks competing for retrieval slots.
+_DORA_TEST_CHUNKS = [
+    (
+        "Empower the human in the loop (OpEx). Primary capabilities: quality "
+        "internal developer platforms and healthy data ecosystems. The first "
+        "investment must be in the environment in which AI operates."
+    ),
+    (
+        "Appendix: Sample ROI calculator. Current number of deployments per year: "
+        "The total number of deployments per year for this application or service. "
+        "The sample calculator uses an estimate of 500 deployments per year."
+    ),
+    (
+        "The sample calculator estimates this as 56 deployments per year, a 12% "
+        "increase over the baseline number of deployments."
+    ),
+    (
+        "Executive summary: Artificial intelligence serves as a powerful amplifier "
+        "in software development. Build the business case for AI investments."
+    ),
+    (
+        "Understand the market divide on AI returns and identify the value drivers "
+        "for AI-assisted software development."
+    ),
+    (
+        "Quantify your AI investment and build the organizational foundation for "
+        "long-term adoption."
+    ),
+    (
+        "Secure long-term ROI by mapping your AI investment roadmap and "
+        "organizational foundation."
+    ),
+    (
+        "Calculate the ROI of AI-assisted software development using value drivers "
+        "and CapEx planning."
+    ),
+    (
+        "DORA research shows high-performing organizations amplify strengths with "
+        "AI adoption in the software delivery lifecycle."
+    ),
+]
 
 
 @pytest.fixture(scope="function")
 async def dora_knowledgebase():
-    """Index the DORA ROI PDF text in an isolated test collection."""
+    """Index minimal DORA-like chunks in an isolated test collection."""
     collection_name = TEST_DORA_COLLECTION
     client = AsyncQdrantClient(host="localhost", port=6333)
     if await client.collection_exists(collection_name=collection_name):
         await client.delete_collection(collection_name=collection_name)
     await client.close()
 
-    await vector_service.store_file_content_in_db(
-        DORA_ROI_TXT,
-        chunk_size=512,
-        collection_name=collection_name,
-    )
+    await vector_service.ensure_collection(collection_name, 768)
+    for chunk in _DORA_TEST_CHUNKS:
+        await vector_service.create(
+            collection_name=collection_name,
+            embedding_vector=embed(clean(chunk)),
+            original_text=chunk,
+            source="dora_test",
+        )
 
     yield collection_name
 
@@ -443,41 +486,41 @@ async def test_dora_human_in_the_loop_query_retrieves_relevant_chunks(
     dora_knowledgebase,
 ):
     """
-    After uploading the DORA ROI 2026 PDF, asking about human-in-the-loop
-    should retrieve the 'Empower the human in the loop' section, not ROI
-    calculator / deployments chunks.
+    For a DORA-like knowledge base, asking about human-in-the-loop should
+    retrieve the 'Empower the human in the loop' section, not ROI calculator
+    / deployments chunks.
     """
     query_vector = embed(clean(HUMAN_IN_THE_LOOP_QUERY))
 
     results = await vector_service.search(
         collection_name=dora_knowledgebase,
         query_vector=query_vector,
-        retrieval_limit=3,
+        retrieval_limit=len(_DORA_TEST_CHUNKS),
         score_threshold=0.0,
     )
 
     assert len(results) >= 1
     retrieved_texts = [r.payload["original_text"] for r in results]
 
-    human_in_the_loop_hits = [
-        text
-        for text in retrieved_texts
+    human_rank = next(
+        index
+        for index, text in enumerate(retrieved_texts)
         if "human" in text.lower() and "loop" in text.lower()
-    ]
-    assert human_in_the_loop_hits, (
-        "Expected at least one chunk about human in the loop in top-3 RAG hits, "
-        f"got: {[t[:120] for t in retrieved_texts]}"
     )
-
-    calculator_noise = [
-        text
-        for text in retrieved_texts
+    calculator_ranks = [
+        index
+        for index, text in enumerate(retrieved_texts)
         if "sample calculator" in text.lower()
         or "deployments per year" in text.lower()
     ]
-    assert not calculator_noise, (
-        "RAG should not return ROI calculator chunks for a human-in-the-loop "
-        f"question, got: {[t[:120] for t in calculator_noise]}"
+
+    assert human_rank == 0, (
+        "Expected the human-in-the-loop chunk to rank first, "
+        f"got rank {human_rank + 1}: {retrieved_texts[0][:120]}"
+    )
+    assert all(rank > human_rank for rank in calculator_ranks), (
+        "ROI calculator chunks should rank below the human-in-the-loop section, "
+        f"human rank={human_rank}, calculator ranks={calculator_ranks}"
     )
 
 
