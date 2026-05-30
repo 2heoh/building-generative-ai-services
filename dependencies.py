@@ -1,5 +1,6 @@
 # dependencies.py
 
+from rag.constants import KNOWLEDGE_BASE_COLLECTION
 from rag.service import vector_service
 from rag.transform import clean, embed
 from schemas import TextModelRequest, TextModelResponse
@@ -21,9 +22,8 @@ async def get_urls_content(body: TextModelRequest = Body(...)) -> str:
     return ""
 
 async def get_rag_content(body: TextModelRequest = Body(...)) -> str:
-    collection_name = "knowledgebase"
     rag_content = await vector_service.search(
-        collection_name, embed(body.prompt), 3, 0.0
+        KNOWLEDGE_BASE_COLLECTION, embed(body.prompt), 3, 0.0
     )
     rag_content_str = "\n".join(
         [clean(c.payload["original_text"]) for c in rag_content]
@@ -35,10 +35,17 @@ async def get_rag_content(body: TextModelRequest = Body(...)) -> str:
             f"from RAG ({len(rag_content)} hits, scores={scores}): {rag_content_str}"
         )
     else:
-        count = await vector_service.db_client.count(collection_name=collection_name)
-        logger.debug(
-            f"from RAG: empty (collection has {count.count} points)"
-        )
+        if await vector_service.db_client.collection_exists(
+            KNOWLEDGE_BASE_COLLECTION
+        ):
+            count = await vector_service.db_client.count(
+                collection_name=KNOWLEDGE_BASE_COLLECTION
+            )
+            logger.debug(
+                f"from RAG: empty (collection has {count.count} points)"
+            )
+        else:
+            logger.debug("from RAG: empty (knowledgebase collection does not exist)")
 
     return rag_content_str
 

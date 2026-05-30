@@ -13,6 +13,9 @@ from main import app
 
 import pytest
 
+# Isolated Qdrant collections for tests — never delete production knowledgebase.
+TEST_DORA_COLLECTION = "test_dora_knowledgebase"
+TEST_E2E_COLLECTION = "test_e2e_knowledgebase"
 
 
 def pytest_collection_modifyitems(items):

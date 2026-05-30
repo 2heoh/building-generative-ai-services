@@ -10,6 +10,7 @@ from qdrant_client.models import Distance, VectorParams
 
 from main import app, models
 from models import load_text_model
+from rag.constants import KNOWLEDGE_BASE_COLLECTION
 
 
 @pytest.fixture(scope="function")
@@ -22,17 +23,14 @@ def text_model():
 
 @pytest.fixture(scope="function")
 async def db_client():
+    """Ensure production knowledgebase exists; never delete it after tests."""
     client = AsyncQdrantClient(host="localhost", port=6333)
-    collection_name = "knowledgebase"
-    if await client.collection_exists(collection_name=collection_name):
-        await client.delete_collection(collection_name=collection_name)
-    await client.create_collection(
-        collection_name=collection_name,
-        vectors_config=VectorParams(size=768, distance=Distance.COSINE),
-    )
+    if not await client.collection_exists(collection_name=KNOWLEDGE_BASE_COLLECTION):
+        await client.create_collection(
+            collection_name=KNOWLEDGE_BASE_COLLECTION,
+            vectors_config=VectorParams(size=768, distance=Distance.COSINE),
+        )
     yield client
-    if await client.collection_exists(collection_name=collection_name):
-        await client.delete_collection(collection_name=collection_name)
     await client.close()
 
 

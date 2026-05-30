@@ -8,6 +8,7 @@ from qdrant_client.models import Distance, VectorParams
 
 from main import app, models
 from models import load_text_model
+from rag.constants import KNOWLEDGE_BASE_COLLECTION
 from rag.service import vector_service
 from rag.transform import embed
 
@@ -22,17 +23,14 @@ def text_model():
 
 @pytest.fixture(scope="function")
 async def db_client():
+    """Ensure production knowledgebase exists; never delete it after tests."""
     client = AsyncQdrantClient(host="localhost", port=6333)
-    collection_name = "knowledgebase"
-    if await client.collection_exists(collection_name=collection_name):
-        await client.delete_collection(collection_name=collection_name)
-    await client.create_collection(
-        collection_name=collection_name,
-        vectors_config=VectorParams(size=768, distance=Distance.COSINE),
-    )
+    if not await client.collection_exists(collection_name=KNOWLEDGE_BASE_COLLECTION):
+        await client.create_collection(
+            collection_name=KNOWLEDGE_BASE_COLLECTION,
+            vectors_config=VectorParams(size=768, distance=Distance.COSINE),
+        )
     yield client
-    if await client.collection_exists(collection_name=collection_name):
-        await client.delete_collection(collection_name=collection_name)
     await client.close()
 
 
@@ -65,7 +63,7 @@ async def test_rag_search_returns_uploaded_content(db_client: AsyncQdrantClient)
     # Query the RAG vector store directly
     query_embedding = embed("Who is the superhero?")
     results = await vector_service.search(
-        collection_name="knowledgebase",
+        collection_name=KNOWLEDGE_BASE_COLLECTION,
         query_vector=query_embedding,
         retrieval_limit=3,
         score_threshold=0.0,
@@ -115,7 +113,7 @@ async def test_rag_search_returns_content_for_multiple_queries(
     for query in queries:
         query_embedding = embed(query)
         results = await vector_service.search(
-            collection_name="knowledgebase",
+            collection_name=KNOWLEDGE_BASE_COLLECTION,
             query_vector=query_embedding,
             retrieval_limit=3,
             score_threshold=0.0,

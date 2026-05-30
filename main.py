@@ -25,6 +25,11 @@ from utils import count_tokens
 from dependencies import build_generation_prompt, get_rag_content, get_urls_content
 from upload import save_file
 from rag import pdf_text_extractor, vector_service
+from rag.constants import (
+    DEFAULT_CHUNK_BYTES,
+    KNOWLEDGE_BASE_COLLECTION,
+    KNOWLEDGE_BASE_VECTOR_SIZE,
+)
 from llm_client import LLMClient
 
 
@@ -32,9 +37,9 @@ async def index_uploaded_pdf(filepath: str) -> None:
     pdf_text_extractor(filepath)
     await vector_service.store_file_content_in_db(
         filepath.replace("pdf", "txt"),
-        512,
-        "knowledgebase",
-        768,
+        DEFAULT_CHUNK_BYTES,
+        KNOWLEDGE_BASE_COLLECTION,
+        KNOWLEDGE_BASE_VECTOR_SIZE,
     )
 
 models = {} 

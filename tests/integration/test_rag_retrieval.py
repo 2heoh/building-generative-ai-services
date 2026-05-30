@@ -11,8 +11,11 @@ import pytest
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 
+from dependencies import get_rag_content
 from rag.service import vector_service
 from rag.transform import embed, clean
+from schemas import TextModelRequest
+from conftest import TEST_DORA_COLLECTION
 
 
 # ============================================================================
@@ -399,3 +402,120 @@ async def test_semantic_query_different_words_same_meaning(populated_rag_collect
         "programming" in text.lower() or "software" in text.lower() or "development" in text.lower()
         for text in retrieved_texts
     ), f"Expected programming-related content, got: {retrieved_texts[:2]}"
+
+
+# ============================================================================
+# Tests - DORA ROI document (human in the loop)
+# ============================================================================
+
+DORA_ROI_TXT = (
+    "uploads/dora-roi-of-ai-assisted-software-development-2026.txt"
+)
+HUMAN_IN_THE_LOOP_QUERY = "what about human in the loop?"
+
+
+@pytest.fixture(scope="function")
+async def dora_knowledgebase():
+    """Index the DORA ROI PDF text in an isolated test collection."""
+    collection_name = TEST_DORA_COLLECTION
+    client = AsyncQdrantClient(host="localhost", port=6333)
+    if await client.collection_exists(collection_name=collection_name):
+        await client.delete_collection(collection_name=collection_name)
+    await client.close()
+
+    await vector_service.store_file_content_in_db(
+        DORA_ROI_TXT,
+        chunk_size=512,
+        collection_name=collection_name,
+    )
+
+    yield collection_name
+
+    client = AsyncQdrantClient(host="localhost", port=6333)
+    if await client.collection_exists(collection_name=collection_name):
+        await client.delete_collection(collection_name=collection_name)
+    await client.close()
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_dora_human_in_the_loop_query_retrieves_relevant_chunks(
+    dora_knowledgebase,
+):
+    """
+    After uploading the DORA ROI 2026 PDF, asking about human-in-the-loop
+    should retrieve the 'Empower the human in the loop' section, not ROI
+    calculator / deployments chunks.
+    """
+    query_vector = embed(clean(HUMAN_IN_THE_LOOP_QUERY))
+
+    results = await vector_service.search(
+        collection_name=dora_knowledgebase,
+        query_vector=query_vector,
+        retrieval_limit=3,
+        score_threshold=0.0,
+    )
+
+    assert len(results) >= 1
+    retrieved_texts = [r.payload["original_text"] for r in results]
+
+    human_in_the_loop_hits = [
+        text
+        for text in retrieved_texts
+        if "human" in text.lower() and "loop" in text.lower()
+    ]
+    assert human_in_the_loop_hits, (
+        "Expected at least one chunk about human in the loop in top-3 RAG hits, "
+        f"got: {[t[:120] for t in retrieved_texts]}"
+    )
+
+    calculator_noise = [
+        text
+        for text in retrieved_texts
+        if "sample calculator" in text.lower()
+        or "deployments per year" in text.lower()
+    ]
+    assert not calculator_noise, (
+        "RAG should not return ROI calculator chunks for a human-in-the-loop "
+        f"question, got: {[t[:120] for t in calculator_noise]}"
+    )
+
+
+# ============================================================================
+# Tests - Missing knowledgebase collection (must not break the API)
+# ============================================================================
+
+_MISSING_COLLECTION = "missing_collection_integration_test"
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_search_returns_empty_when_collection_missing():
+    results = await vector_service.search(
+        _MISSING_COLLECTION,
+        embed(clean("any query")),
+        retrieval_limit=3,
+        score_threshold=0.0,
+    )
+    assert results == []
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_get_rag_content_when_knowledgebase_missing_returns_empty():
+    """Regression: tests or restarts must not leave POST /generate/text with 404."""
+    from unittest.mock import AsyncMock, patch
+
+    with patch.object(
+        vector_service.db_client,
+        "collection_exists",
+        new=AsyncMock(return_value=False),
+    ):
+        body = TextModelRequest(
+            model="tinyLlama",
+            prompt="what about human in the loop?",
+            temperature=0.1,
+        )
+        result = await get_rag_content(body)
+
+    assert result == ""
